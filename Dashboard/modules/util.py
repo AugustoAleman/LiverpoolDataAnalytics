@@ -230,9 +230,17 @@ def loadCSV():
 df = loadCSV()
 
 
-def resignationOverMonnths():
-
+def resignationOverMonnths(area = 'Todos'):
     df_aux = df
+
+    if area == 'Todos':
+        pass
+    else:
+        if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+            df_aux = df_aux[df_aux['Descubica'].str.contains(area)]
+        elif area == 'Otros':
+            df_aux = df_aux[~df_aux['Descubica'].str.contains('Liverpool|Suburbia|CeDis')]
+
     # Crear columna col el mes de la salida
     df_aux['Mes Salida'] =  pd.DatetimeIndex(df_aux['Fecha Salida']).month
 
@@ -258,7 +266,7 @@ def resignationOverMonnths():
 
     # Configurar título y etiquetas
     fig.update_layout(
-        title=setTitle('Bajas Por Meses', 'Dataset: Renuncias Demográfico'),
+        title=setTitle('Bajas Por Meses', f'Sector Empresarial: {area}'),
         xaxis_title="Fecha",
         yaxis_title="Bajas",
         title_x=0.175,

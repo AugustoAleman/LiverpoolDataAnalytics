@@ -15,10 +15,17 @@
 
 .nav-options {
     display: flex;
+    flex-direction: row;
     font-family: "Fira Sans", sans-serif;
     font-weight: lighter;
+    justify-content: flex-end;
     align-items: center;
     font-size: 12px;
+}
+
+.nav-option-container {
+    display: flex;
+    flex-direction: row;
 }
 
 .rounded-button {
@@ -37,44 +44,19 @@
     margin-left: 3rem;
 }
 
+.rounded-button:hover {
+    text-decoration: underline;
+}
+
 
 .nav-option {
+    display: flex;
+    flex-direction: row;
     margin: 0 10px;
     text-decoration: none;
     color: #202030;
     margin-left: 3rem;
-}
-
-/* Style for the two-column layout */
-.two-column-layout {
-    display: flex;
-    justify-content: space-between;
-    padding: 20px;
-}
-
-.left-column {
-    width: 30%;
-    padding: 20px;
-    font-family: "Fira Sans", sans-serif;
-    background-color: #F8F8F8;
-}
-
-.title {
-    font-size: 22px;
-    font-weight: bold;
-}
-
-.subtitle {
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.description {
-    font-size: 14px;
-}
-
-.picker-description {
-    margin-top: 3rem;
+    text-decoration: none;
 }
 
 /* Style for the footer */
@@ -168,6 +150,40 @@
     margin-left: 0.5rem;
     margin-right: 0.5rem;
     cursor: pointer;
+}
+
+/* Styles for the Home Page */
+
+/* Style for the two-column layout */
+.two-column-layout {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+.left-column {
+    width: 30%;
+    padding: 20px;
+    font-family: "Fira Sans", sans-serif;
+    background-color: #F8F8F8;
+}
+
+.title {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.subtitle {
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.description {
+    font-size: 14px;
+}
+
+.picker-description {
+    margin-top: 3rem;
 }
 
 /* Style for the right column */

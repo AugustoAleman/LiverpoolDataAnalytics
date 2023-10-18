@@ -4,6 +4,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 from datetime import datetime
 from modules import util
+from dash import callback
 
 dash.register_page(__name__, path='/')
 
@@ -44,7 +45,8 @@ layout = html.Div([
                     html.Div('Tendencia de renuncias', className='chart-title'),
                     html.Hr(className='divider'),  # Horizontal line
                     dcc.Graph(
-                        figure=util.resignationOverMonnths(),
+                        id='resignation-graph',  # Replace with the ID of your graph
+                        figure=util.resignationOverMonnths('Todos'),  # Initial value or default
                     ),
                 ], className = 'chart-container'),
                 html.Div([
@@ -65,3 +67,12 @@ layout = html.Div([
             ], className='charts-column')
         ], className='right-column', style={'width': '70%'}),
     ], className='two-column-layout')
+
+@callback(
+    Output('resignation-graph', 'figure'),  # Replace 'resignation-graph' with your graph ID
+    Input('dropdown', 'value')
+)
+def update_resignation_graph(selected_value):
+    # Call the util function with the selected value
+    figure = util.resignationOverMonnths(selected_value)
+    return figure
