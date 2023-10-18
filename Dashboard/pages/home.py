@@ -28,7 +28,7 @@ layout = html.Div([
             ),
             html.H4('Selecciona un periodo', className='picker-description'),
             dcc.DatePickerRange(
-                id='date-picker',
+                id='date-picker-range',
                 start_date=datetime(2019, 1, 1),
                 end_date=datetime(2023, 1, 31),
             ),
@@ -46,14 +46,15 @@ layout = html.Div([
                     html.Hr(className='divider'),  # Horizontal line
                     dcc.Graph(
                         id='resignation-graph',  # Replace with the ID of your graph
-                        figure=util.resignationOverMonnths('Todos'),  # Initial value or default
+                        figure=util.resignationOverMonnths('Todos', None, None),  # Initial value or default
                     ),
                 ], className = 'chart-container'),
                 html.Div([
                     html.Div('Renuncias en Sectores Estrátegicos', className='chart-title'),
                     html.Hr(className='divider'),
                     dcc.Graph(
-                        figure=util.resignedPerArea(),
+                        id='resignation-per-area-graph', 
+                        figure=util.resignedPerArea(None, None),
                     ),
                 ], className = 'chart-container'),
                 html.Div([
@@ -70,9 +71,21 @@ layout = html.Div([
 
 @callback(
     Output('resignation-graph', 'figure'),  # Replace 'resignation-graph' with your graph ID
-    Input('dropdown', 'value')
+    Input('dropdown', 'value'),
+    Input('date-picker-range', 'start_date'),
+    Input('date-picker-range', 'end_date')
 )
-def update_resignation_graph(selected_value):
+def update_resignation_graph(selected_value, start_date, end_date):
     # Call the util function with the selected value
-    figure = util.resignationOverMonnths(selected_value)
+    figure = util.resignationOverMonnths(selected_value, start_date, end_date)
+    return figure
+
+@callback(
+    Output('resignation-per-area-graph', 'figure'),
+    Input('date-picker-range', 'start_date'),
+    Input('date-picker-range', 'end_date')
+)
+def update_resignation_per_area_graph(start_date, end_date):
+    # Call the util function with the selected value
+    figure = util.resignedPerArea(start_date, end_date)
     return figure

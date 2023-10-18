@@ -230,8 +230,11 @@ def loadCSV():
 df = loadCSV()
 
 
-def resignationOverMonnths(area = 'Todos'):
+def resignationOverMonnths(area = 'Todos', start_date = None, end_date = None):
     df_aux = df
+
+    print('start date:', start_date)
+    print('end date:', end_date)
 
     if area == 'Todos':
         pass
@@ -240,6 +243,9 @@ def resignationOverMonnths(area = 'Todos'):
             df_aux = df_aux[df_aux['Descubica'].str.contains(area)]
         elif area == 'Otros':
             df_aux = df_aux[~df_aux['Descubica'].str.contains('Liverpool|Suburbia|CeDis')]
+
+    if not start_date == None and not end_date == None:
+        df_aux = df_aux[(df_aux['Fecha ingreso'] >= start_date) & (df['Fecha Salida'] <= end_date)]
 
     # Crear columna col el mes de la salida
     df_aux['Mes Salida'] =  pd.DatetimeIndex(df_aux['Fecha Salida']).month
@@ -317,17 +323,23 @@ def plotPie(labels,
 
     return fig
 
-def resignedPerArea():
+def resignedPerArea(start_date = None, end_date = None):
+  
+  df_aux = df
+
+  if not start_date == None and not end_date == None:
+        df_aux = df_aux[(df_aux['Fecha ingreso'] >= start_date) & (df['Fecha Salida'] <= end_date)]
+  
   # DEMOGRAFICOS
   # Separacion de Dataframes por Area empresarial
-  df_liverpool = df[df['Descubica'].str.contains('Liverpool')]
+  df_liverpool = df_aux[df_aux['Descubica'].str.contains('Liverpool')]
 
-  df_suburbia = df[df['Descubica'].str.contains('Suburbia')]
+  df_suburbia = df_aux[df_aux['Descubica'].str.contains('Suburbia')]
 
-  df_cedis = df[df['Descubica'].str.contains('CeDis')]
+  df_cedis = df_aux[df_aux['Descubica'].str.contains('CeDis')]
 
   # Crear un DataFrame para los datos que no sean ninguna de las ubicaciones anteriores
-  df_others = df[~df['Descubica'].str.contains('Liverpool|Suburbia|CeDis')]
+  df_others = df_aux[~df_aux['Descubica'].str.contains('Liverpool|Suburbia|CeDis')]
 
   # Agregar a un arreglo los valores de renuncias por area empresarial
   resigned_per_location = [len(df_liverpool),
