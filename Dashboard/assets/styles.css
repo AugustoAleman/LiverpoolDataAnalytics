@@ -20,7 +20,7 @@
     font-weight: lighter;
     justify-content: flex-end;
     align-items: center;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .nav-option-container {
@@ -37,7 +37,7 @@
     text-align: center;
     text-decoration: none;
     display: inline-block;
-    font-size: 12px;
+    font-size: 14px;
     margin: 4px 2px;
     cursor: pointer;
     width: 8rem;
