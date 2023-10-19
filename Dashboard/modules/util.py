@@ -8,6 +8,7 @@
 ### LIBRERIAS
 import pandas as pd
 import numpy as np
+import requests
 
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
@@ -19,6 +20,7 @@ from datetime import datetime, date
 import calendar
 
 import re
+import os
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -178,7 +180,7 @@ file_path = '../data/'
 
 #Carga de archivo
 def loadCSV():
-    demographic_resigned = '.\data\Demograficos-Renuncias-Liverpool.csv'
+    demographic_resigned = os.path.join(os.path.dirname(__file__), '../data/Demograficos-Renuncias-Liverpool.csv')
     df_demographic_resigned = pd.read_csv(demographic_resigned)
     df_demographic_resigned = setCustomIndex(df_demographic_resigned, 0)
 
@@ -245,7 +247,7 @@ def resignationOverMonnths(area = 'Todos', start_date = None, end_date = None):
             df_aux = df_aux[~df_aux['Descubica'].str.contains('Liverpool|Suburbia|CeDis')]
 
     if not start_date == None and not end_date == None:
-        df_aux = df_aux[(df_aux['Fecha ingreso'] >= start_date) & (df['Fecha Salida'] <= end_date)]
+        df_aux = df_aux[(df_aux['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)]
 
     # Crear columna col el mes de la salida
     df_aux['Mes Salida'] =  pd.DatetimeIndex(df_aux['Fecha Salida']).month
@@ -328,7 +330,7 @@ def resignedPerArea(start_date = None, end_date = None):
   df_aux = df
 
   if not start_date == None and not end_date == None:
-        df_aux = df_aux[(df_aux['Fecha ingreso'] >= start_date) & (df['Fecha Salida'] <= end_date)]
+        df_aux = df_aux[(df_aux['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)]
   
   # DEMOGRAFICOS
   # Separacion de Dataframes por Area empresarial
@@ -502,3 +504,196 @@ def areasOverYears(df = df):
 
   return fig
 
+
+def addStateInfo(df):
+    file_name = os.path.join(os.path.dirname(__file__), '../data/CP Liverpool.csv')
+
+    df_states = pd.read_csv(file_name)
+
+    df_states = df_states.drop('Descubica', axis = 1)
+
+    df_states['Estado'] = df_states['Estado'].str.capitalize()
+
+    old_names = ['Ciudad de mexico', 
+                 'Mexico', 
+                 'Michoacan de ocampo', 
+                 'Nuevo Leon',
+                 'Queretaro',
+                 'San luis potosi',
+                 'Yucatan',
+                 'Veracruz de ignacio de la llave',
+                 'Nuevo leon',
+                 'Baja california sur',
+                 'Baja california',
+                 'Quintana roo',
+                 'Coahuila de zaragoza']
+    
+    new_names = ['Ciudad de México', 
+                 'México', 
+                 'Michoacán', 
+                 'Nuevo León',
+                 'Querétaro',
+                 'San Luis Potosí',
+                 'Yucatán',
+                 'Veracruz',
+                 'Nuevo León',
+                 'Baja California Sur',
+                 'Baja California',
+                 'Quintana Roo',
+                 'Coahuila']
+    
+    for key in range(0, len(old_names)):
+        df_states['Estado'] =  df_states['Estado'].replace(old_names[key], new_names[key])
+
+    df = df.merge(df_states, on = 'CP Trabajo', how = 'left')
+
+    return df
+
+df = loadCSV()
+
+def resignedPerStateMap(area = 'Todos', start_date = None, end_date = None):
+
+    df_aux = loadCSV()
+
+    if not start_date == None and not end_date == None:
+        df_aux = df_aux[(df_aux['Fecha Salida'] >= start_date) & (df_aux['Fecha Salida'] <= end_date)]
+
+    if area == 'Todos':
+        pass
+    else:
+        if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+            df_aux = df_aux[df_aux['Descubica'].str.contains(area)]
+        elif area == 'Otros':
+            df_aux = df_aux[~df_aux['Descubica'].str.contains('Liverpool|Suburbia|CeDis')]
+
+    df_aux = addStateInfo(df_aux)
+
+    repo_url = 'https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.json'
+
+    #Archivo GeoJSON
+    mx_regions_geo = requests.get(repo_url).json()
+
+    value_per_state = df_aux.groupby('Estado')['Nº pers.'].nunique()
+
+    df = pd.DataFrame({'Estado': value_per_state.index.tolist(),
+                      'Total': value_per_state.values.tolist()})
+    
+    df['Total'] = df['Total'].apply(lambda x: round((x / df['Total'].sum()) * 100, 2))
+
+    fig = go.Figure(go.Choroplethmapbox(name='Mexico',
+                                        geojson=mx_regions_geo,
+                                        ids=df['Estado'],
+                                        z=df['Total'],
+                                        locations=df['Estado'],
+                                        featureidkey='properties.name',
+                                        colorscale=colors_extended[::-1],
+                                        marker=dict(line=dict(color='black'),
+                                                    opacity=0.6)))
+
+    fig.update_layout(mapbox_style='open-street-map',
+                    mapbox_zoom=3.5,
+                    mapbox_center = {'lat': 24, 'lon': -102}
+                    )
+
+     #Configuración de título
+    fig.update_layout(
+            title = setTitle('Porcentaje de renuncias por estado (%)', f'Sector: {area}'),
+            title_x=0.15,
+            coloraxis_colorbar =dict (
+                title = 'Porcentaje %'
+            )
+    )
+
+    fig.layout.images = getLogo(0.02, 1.075, 0.22, 0.22)
+
+    return fig
+
+def resignedInPeriod(area = 'Todos', start_date = None, end_date = None):
+
+    if not start_date == None and not end_date == None:
+        df_aux = df
+
+        df_aux = df_aux[(df_aux['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)]
+
+        if area == 'Todos':
+            pass
+        else:
+            if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+                df_aux = df_aux[df_aux['Descubica'].str.contains(area)]
+            elif area == 'Otros':
+                df_aux = df_aux[~df_aux['Descubica'].str.contains('Liverpool|Suburbia|CeDis')]
+
+    if not start_date == None and not end_date == None:
+        df_aux = df_aux[(df_aux['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)]
+
+        value = df_aux['Nº pers.'].nunique()
+
+        return f'{value:,} personas'
+    else:
+        return 'Error'
+
+def averageService(area, start_date, end_date):
+    if not start_date == None and not end_date == None:
+        df_aux = df
+
+        df_aux = df_aux[(df_aux['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)]
+
+        if area == 'Todos':
+            pass
+        else:
+            if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+                df_aux = df_aux[df_aux['Descubica'].str.contains(area)]
+            elif area == 'Otros':
+                df_aux = df_aux[~df_aux['Descubica'].str.contains('Liverpool|Suburbia|CeDis')]
+
+    if not start_date == None and not end_date == None:
+        df_aux = df_aux[(df_aux['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)]
+
+        print(df_aux['Nº pers.'].nunique())
+
+        value = df_aux['Antigüedad'].mean()
+
+        return f'{round(value, 1):,} años'
+    else:
+        return 'Error'
+    
+def turnoverRate(area = 'Todos', start_date = None, end_date = None):
+    if not start_date == None and not end_date == None:
+
+        demographic_active = os.path.join(os.path.dirname(__file__), '../data/Demograficos-Activos-Liverpool.csv')
+        df_demographic_active = pd.read_csv(demographic_active)
+
+        df_aux_res = df
+        df_aux_act = df_demographic_active
+
+        if area == 'Todos':
+            pass
+        else:
+            if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+                df_aux_res = df_aux_res[df_aux_res['Descubica'].str.contains(area)]
+                df_aux_act = df_aux_act[df_aux_act['Desc Ubicación'].str.contains(area)]
+            elif area == 'Otros':
+                df_aux_res = df_aux_res[~df_aux_res['Descubica'].str.contains('Liverpool|Suburbia|CeDis')]
+                df_aux_act = df_aux_act[~df_aux_act['Desc Ubicación'].str.contains('Liverpool|Suburbia|CeDis')]
+        
+        # cast as date
+        df_aux_act['Fecha Ingreso'] = pd.to_datetime(df_aux_act['Fecha Ingreso'], format='%Y-%m-%d')
+
+        start_count = 0
+
+        start_count += len(df_aux_act[(df_aux_act['Fecha Ingreso'] < start_date)])
+        start_count += len(df_aux_res[(df_aux_res['Fecha Salida'])  > start_date])
+
+        end_count = 0
+
+        end_count += len(df_aux_act[(df_aux_act['Fecha Ingreso'] <= end_date)])
+        end_count += len(df_aux_res[(df_aux_res['Fecha Salida'])  > end_date])
+
+        resigned_in_period = len(df_aux_res[(df_aux_res['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)])
+
+        value = (resigned_in_period / ((start_count + end_count) / 2)) * 100
+
+        return f'{round(value, 1):,}%'
+
+    else:
+        return 'Error'
