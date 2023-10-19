@@ -40,6 +40,28 @@ layout = html.Div([
         
         # Right column with charts
         html.Div([
+
+            html.Div([
+                html.Div([
+                    html.Div(html.Img(src = 'assets/src/7.png', className='statistic-image'), className='statistic-image-container'),
+                    html.Div(html.A('Tasa de rotación'), className='statistic-title'),
+                    html.Div(html.A('57.6%'), className='statistic-value')
+                ], className='statistics-box'),
+
+                html.Div([
+                    html.Div(html.Img(src = 'assets/src/6.png', className='statistic-image'), className='statistic-image-container'),
+                    html.Div(html.A('Bajas en periodo'), className='statistic-title'),
+                    html.Div(html.A('5,600'), className='statistic-value')
+                ], className='statistics-box'),
+
+                html.Div([
+                    html.Div(html.Img(src = 'assets/src/5.png', className='statistic-image'), className='statistic-image-container'),
+                    html.Div(html.A('Antigüedad promedio p/ empleado'), className='statistic-title'),
+                    html.Div(html.A('6.67 meses'), className='statistic-value')
+                ], className='statistics-box')
+
+            ], className= 'statistics-container'),
+            
             html.Div([
                 html.Div([
                     html.Div('Tendencia de renuncias', className='chart-title'),

@@ -19,6 +19,7 @@ from datetime import datetime, date
 import calendar
 
 import re
+import os
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -178,7 +179,7 @@ file_path = '../data/'
 
 #Carga de archivo
 def loadCSV():
-    demographic_resigned = '.\data\Demograficos-Renuncias-Liverpool.csv'
+    demographic_resigned = os.path.join(os.path.dirname(__file__), '../data/Demograficos-Renuncias-Liverpool.csv')
     df_demographic_resigned = pd.read_csv(demographic_resigned)
     df_demographic_resigned = setCustomIndex(df_demographic_resigned, 0)
 
