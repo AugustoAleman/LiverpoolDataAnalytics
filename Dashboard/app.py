@@ -1,9 +1,20 @@
 import dash
 import dash_html_components as html
 from components import footer, navbar
+import dash_auth
 
+# Ejemplo
+VALID_USERNAME_PASSWORD_PAIRS = {
+    'root': 'root',
+    'admin': 'admin'
+}
 
 app = dash.Dash(__name__, title='Liverpool Human Analytics', use_pages = True)  # Set the title
+auth = dash_auth.BasicAuth(
+    app,
+    VALID_USERNAME_PASSWORD_PAIRS
+)
+
 app.title = 'Liverpool Human Analytics'  # Alternate way to set the title
 
 # Define the app layout
