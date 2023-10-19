@@ -246,7 +246,7 @@ def resignationOverMonnths(area = 'Todos', start_date = None, end_date = None):
             df_aux = df_aux[~df_aux['Descubica'].str.contains('Liverpool|Suburbia|CeDis')]
 
     if not start_date == None and not end_date == None:
-        df_aux = df_aux[(df_aux['Fecha ingreso'] >= start_date) & (df['Fecha Salida'] <= end_date)]
+        df_aux = df_aux[(df_aux['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)]
 
     # Crear columna col el mes de la salida
     df_aux['Mes Salida'] =  pd.DatetimeIndex(df_aux['Fecha Salida']).month
@@ -329,7 +329,7 @@ def resignedPerArea(start_date = None, end_date = None):
   df_aux = df
 
   if not start_date == None and not end_date == None:
-        df_aux = df_aux[(df_aux['Fecha ingreso'] >= start_date) & (df['Fecha Salida'] <= end_date)]
+        df_aux = df_aux[(df_aux['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)]
   
   # DEMOGRAFICOS
   # Separacion de Dataframes por Area empresarial
@@ -503,3 +503,92 @@ def areasOverYears(df = df):
 
   return fig
 
+def resignedInPeriod(area = 'Todos', start_date = None, end_date = None):
+
+    if not start_date == None and not end_date == None:
+        df_aux = df
+
+        df_aux = df_aux[(df_aux['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)]
+
+        if area == 'Todos':
+            pass
+        else:
+            if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+                df_aux = df_aux[df_aux['Descubica'].str.contains(area)]
+            elif area == 'Otros':
+                df_aux = df_aux[~df_aux['Descubica'].str.contains('Liverpool|Suburbia|CeDis')]
+
+    if not start_date == None and not end_date == None:
+        df_aux = df_aux[(df_aux['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)]
+
+        value = df_aux['Nº pers.'].nunique()
+
+        return f'{value:,} personas'
+    else:
+        return 'Error'
+
+def averageService(area, start_date, end_date):
+    if not start_date == None and not end_date == None:
+        df_aux = df
+
+        df_aux = df_aux[(df_aux['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)]
+
+        if area == 'Todos':
+            pass
+        else:
+            if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+                df_aux = df_aux[df_aux['Descubica'].str.contains(area)]
+            elif area == 'Otros':
+                df_aux = df_aux[~df_aux['Descubica'].str.contains('Liverpool|Suburbia|CeDis')]
+
+    if not start_date == None and not end_date == None:
+        df_aux = df_aux[(df_aux['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)]
+
+        print(df_aux['Nº pers.'].nunique())
+
+        value = df_aux['Antigüedad'].mean()
+
+        return f'{round(value, 1):,} años'
+    else:
+        return 'Error'
+    
+def turnoverRate(area = 'Todos', start_date = None, end_date = None):
+    if not start_date == None and not end_date == None:
+
+        demographic_active = os.path.join(os.path.dirname(__file__), '../data/Demograficos-Activos-Liverpool.csv')
+        df_demographic_active = pd.read_csv(demographic_active)
+
+        df_aux_res = df
+        df_aux_act = df_demographic_active
+
+        if area == 'Todos':
+            pass
+        else:
+            if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+                df_aux_res = df_aux_res[df_aux_res['Descubica'].str.contains(area)]
+                df_aux_act = df_aux_act[df_aux_act['Desc Ubicación'].str.contains(area)]
+            elif area == 'Otros':
+                df_aux_res = df_aux_res[~df_aux_res['Descubica'].str.contains('Liverpool|Suburbia|CeDis')]
+                df_aux_act = df_aux_act[~df_aux_act['Desc Ubicación'].str.contains('Liverpool|Suburbia|CeDis')]
+        
+        # cast as date
+        df_aux_act['Fecha Ingreso'] = pd.to_datetime(df_aux_act['Fecha Ingreso'], format='%Y-%m-%d')
+
+        start_count = 0
+
+        start_count += len(df_aux_act[(df_aux_act['Fecha Ingreso'] < start_date)])
+        start_count += len(df_aux_res[(df_aux_res['Fecha Salida'])  > start_date])
+
+        end_count = 0
+
+        end_count += len(df_aux_act[(df_aux_act['Fecha Ingreso'] <= end_date)])
+        end_count += len(df_aux_res[(df_aux_res['Fecha Salida'])  > end_date])
+
+        resigned_in_period = len(df_aux_res[(df_aux_res['Fecha Salida'] >= start_date) & (df['Fecha Salida'] <= end_date)])
+
+        value = (resigned_in_period / ((start_count + end_count) / 2)) * 100
+
+        return f'{round(value, 1):,}%'
+
+    else:
+        return 'Error'

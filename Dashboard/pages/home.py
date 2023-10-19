@@ -45,19 +45,19 @@ layout = html.Div([
                 html.Div([
                     html.Div(html.Img(src = 'assets/src/7.png', className='statistic-image'), className='statistic-image-container'),
                     html.Div(html.A('Tasa de rotación'), className='statistic-title'),
-                    html.Div(html.A('57.6%'), className='statistic-value')
+                    html.Div(html.A('57.6%'), className='statistic-value', id = 'turnover-rate')
                 ], className='statistics-box'),
 
                 html.Div([
                     html.Div(html.Img(src = 'assets/src/6.png', className='statistic-image'), className='statistic-image-container'),
                     html.Div(html.A('Bajas en periodo'), className='statistic-title'),
-                    html.Div(html.A('5,600'), className='statistic-value')
+                    html.Div(html.A('5,600'), className='statistic-value', id = 'resigned-in-period')
                 ], className='statistics-box'),
 
                 html.Div([
                     html.Div(html.Img(src = 'assets/src/5.png', className='statistic-image'), className='statistic-image-container'),
                     html.Div(html.A('Antigüedad promedio p/ empleado'), className='statistic-title'),
-                    html.Div(html.A('6.67 meses'), className='statistic-value')
+                    html.Div(html.A('6.67 meses'), className='statistic-value', id = 'service-in-period')
                 ], className='statistics-box')
 
             ], className= 'statistics-container'),
@@ -111,3 +111,36 @@ def update_resignation_per_area_graph(start_date, end_date):
     # Call the util function with the selected value
     figure = util.resignedPerArea(start_date, end_date)
     return figure
+
+@callback(
+    Output('resigned-in-period', 'children'),
+    Input('dropdown', 'value'),
+    Input('date-picker-range', 'start_date'),
+    Input('date-picker-range', 'end_date')
+)
+def update_resigned_in_period(selected_value, start_date, end_date):
+    # Call the util function with the selected value
+    value = util.resignedInPeriod(selected_value, start_date, end_date)
+    return value
+
+@callback(
+    Output('service-in-period', 'children'),
+    Input('dropdown', 'value'),
+    Input('date-picker-range', 'start_date'),
+    Input('date-picker-range', 'end_date')
+)
+def update_service_in_period(selected_value, start_date, end_date):
+    # Call the util function with the selected value
+    value = util.averageService(selected_value, start_date, end_date)
+    return value
+
+@callback(
+    Output('turnover-rate', 'children'),
+    Input('dropdown', 'value'),
+    Input('date-picker-range', 'start_date'),
+    Input('date-picker-range', 'end_date')
+)
+def update_turnover_rate_in_period(selected_value, start_date, end_date):
+    # Call the util function with the selected value
+    value = util.turnoverRate(selected_value, start_date, end_date)
+    return value
