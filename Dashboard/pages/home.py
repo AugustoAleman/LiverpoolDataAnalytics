@@ -31,11 +31,7 @@ layout = html.Div([
                 id='date-picker-range',
                 start_date=datetime(2019, 1, 1),
                 end_date=datetime(2023, 1, 31),
-            ),
-            html.H4('Selecciona ubicaciones', className='picker-description'),
-            html.Div([
-                dcc.Dropdown(['Liverpool Polanco', 'Suburbia Coapa', 'CeDis Nacional'], 'Liverpool Polanco', multi=True)
-            ]),
+            )
         ], className='left-column', style={'width': '30%'}),
         
         # Right column with charts
