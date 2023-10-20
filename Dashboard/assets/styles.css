@@ -264,4 +264,60 @@
     margin-top: -0.1rem;
   }
 
+/*  Styles for the login-page */
+.login-page {
+    width: 100%;
+    height: 43rem;
+    display: flex;
+    flex-direction: row;
+}
+
+.login-image-banner {
+    width: 40%;
+    height: 43rem;
+}
+
+.login-image-banner-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.login-box-container {
+    width: 60%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.login-box-options {
+    height: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.login-logo-image {
+    width: 20rem;
+}
+
+.login-textfield {
+    background-color: #F0F0F0;
+    border-radius: 30px;
+    height: 2rem;
+    width: 15rem;
+    border-color: #F0F0F0;
+}
+
+.login-submit-button {
+    border-color: #E43A93;
+    background-color: #E43A93;
+    border-radius: 30px;
+    height: 2.2rem;
+    width: 15rem;
+}
+
 /* Additional CSS customization for charts if needed */
