@@ -16,7 +16,13 @@ import plotly.offline as pyo
 import plotly.figure_factory as ff
 import plotly.express as px
 
+import joblib
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder
+
 from datetime import datetime, date
+from datetime import datetime, timedelta
 import calendar
 
 import re
@@ -697,3 +703,397 @@ def turnoverRate(area = 'Todos', start_date = None, end_date = None):
 
     else:
         return 'Error'
+    
+''' Modelos de ML '''
+
+def loadModeldata():
+
+    path = os.path.join(os.path.dirname(__file__), './model_saves/classification_model.joblib')
+
+    classification_model = joblib.load(path)
+
+    path = os.path.join(os.path.dirname(__file__), './model_saves/regression_model_.joblib')
+
+    regression_model = joblib.load(path)
+
+    return classification_model, regression_model
+
+# Conversión de columnas categóricas a numericas
+def dataToNumeric(df):
+
+    df_categoric = df.select_dtypes(exclude= ['number'])
+
+    label_encoder = LabelEncoder()
+    for col in range (0, len(df_categoric.columns)):
+        df[df_categoric.columns[col]] = label_encoder.fit_transform(df[df_categoric.columns[col]])
+
+    return df
+
+def identify_risk(df, model):
+    
+    model = model
+            
+    aux = df.copy()
+    aux.drop(['genero', 'sindicato', 'edad ingreso', 'edad salida', 'id'], axis = 1, inplace = True)
+    aux = dataToNumeric(aux)
+
+    # Normalización
+    n_colsX = aux.shape[1]-1
+    X = aux.iloc[:,0:n_colsX]
+    rescaledX = StandardScaler().fit_transform(X)
+    newX    = pd.DataFrame(data=rescaledX,columns=X.columns)
+
+    # Utilizar el modelo para predecir probabilidades de la clase positiva
+    Y_probabilities = model.predict_proba(newX)[:, 1]
+
+    # Definir umbrales de riesgo
+    low_threshold = 0.3
+    medium_threshold = 0.5
+
+    # Asignar niveles de riesgo
+    risk_levels = []
+
+    for score in Y_probabilities:
+        if score < low_threshold:
+            risk_levels.append("Riesgo Bajo")
+        elif low_threshold <= score < medium_threshold:
+            risk_levels.append("Riesgo Medio")
+        else:
+            risk_levels.append("Riesgo Alto")
+
+    # Agregar los niveles de riesgo al DataFrame
+    df['Nivel de Riesgo'] = risk_levels
+
+    return df
+
+def identify_service(df, model):
+
+    model = model
+
+    # Colocar antiguedad como última columna
+    class_column = df['antiguedad']
+    df = df.drop('antiguedad', axis=1)
+    df['antiguedad'] = class_column
+
+    aux = df.copy()
+
+    # Eliminación de columnas no usadas
+    aux.drop(['clase', 'id', 'genero', 'eventual', 'sindicato'], axis = 1, inplace = True)
+
+    # Conversión de datos categoricos
+    n_colsX = aux.shape[1] - 1
+    X = aux.iloc[:, 0:n_colsX]
+    X = dataToNumeric(X)
+
+    # Normalization
+    rescaledX = StandardScaler().fit_transform(X)
+    newX = pd.DataFrame(data=rescaledX, columns=X.columns)
+
+    # Use the model to predict
+    y_pred = model.predict(newX)
+
+    # Add the predicted values to the DataFrame
+    df['Antigüedad Pronosticada'] = y_pred
+    df['Antigüedad Pronosticada'] = df['Antigüedad Pronosticada'].astype(float)
+
+    # Conversión a meses
+    df['Antigüedad Pronosticada'] = ((df['Antigüedad Pronosticada'] * 365.25) / 30)
+    df['antiguedad'] = ((df['antiguedad'] * 365.25) / 30)
+
+    # Redondear valores
+    df['Antigüedad Pronosticada'] =  df['Antigüedad Pronosticada'].astype(int)
+    df['antiguedad'] =  df['antiguedad'].astype(int)
+
+    return df
+
+def use_models(df):
+
+    c_model, r_model = loadModeldata()
+
+    if df is None:
+        path = os.path.join(os.path.dirname(__file__), '../data/model/sample_1.csv')
+        model_df = pd.read_csv(path)
+        aux = model_df.copy()
+    else:
+        aux = df.copy()
+
+    aux = identify_risk(aux, c_model)
+
+    aux = identify_service(aux, r_model)
+
+    return aux
+
+model_df = use_models(None)
+
+def atRisk(area = 'Todos', df = None):
+
+    if df is None:
+        df_aux = model_df.copy()
+    else:
+        df_aux = use_models(df)
+
+    if area == 'Todos':
+        pass
+    else:
+        if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+            df_aux = df_aux[df_aux['area empresarial'].str.contains(area)]
+        elif area == 'Otros':
+                df_aux = df_aux[~df_aux['area empresarial'].str.contains('Liverpool|Suburbia|CeDis')]
+
+    return f'{round(len(df_aux), 0):,}'
+
+def atHighRisk(area = 'Todos', df = None):
+
+    if df is None:
+        df_aux = model_df.copy()
+    else:
+        df_aux = use_models(df)
+
+    if area == 'Todos':
+        pass
+    else:
+        if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+            df_aux = df_aux[df_aux['area empresarial'].str.contains(area)]
+        elif area == 'Otros':
+                df_aux = df_aux[~df_aux['area empresarial'].str.contains('Liverpool|Suburbia|CeDis')]
+
+    df_aux = df_aux[df_aux['Nivel de Riesgo'] == 'Riesgo Alto']
+
+    return f'{round(len(df_aux), 0):,}'
+
+def averageServicePrognosed(area = 'Todos', df = None):
+
+    if df is None:
+        df_aux = model_df.copy()
+    else:
+        df_aux = use_models(df)
+
+    if area == 'Todos':
+        pass
+    else:
+        if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+            df_aux = df_aux[df_aux['area empresarial'].str.contains(area)]
+        elif area == 'Otros':
+                df_aux = df_aux[~df_aux['area empresarial'].str.contains('Liverpool|Suburbia|CeDis')]
+
+    aux = df_aux['Antigüedad Pronosticada'].mean()
+    aux = int(aux)
+
+    return f'{aux:,} meses'
+
+def percentageAtHighRisk(area = 'Todos', df = None):
+
+    if df is None:
+        df_aux = model_df.copy()
+    else:
+        df_aux = use_models(df)
+
+    if area == 'Todos':
+        pass
+    else:
+        if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+            df_aux = df_aux[df_aux['area empresarial'].str.contains(area)]
+        elif area == 'Otros':
+                df_aux = df_aux[~df_aux['area empresarial'].str.contains('Liverpool|Suburbia|CeDis')]
+
+    df_aux = df_aux[df_aux['Nivel de Riesgo'] == 'Riesgo Alto']
+
+    return f'{round(((len(df_aux) / len(df)) * 100), 2):,}%'
+
+def percentageAtMediumhRisk(area = 'Todos', df = None):
+
+    if df is None:
+        df_aux = model_df.copy()
+    else:
+        df_aux = use_models(df)
+
+    if area == 'Todos':
+        pass
+    else:
+        if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+            df_aux = df_aux[df_aux['area empresarial'].str.contains(area)]
+        elif area == 'Otros':
+                df_aux = df_aux[~df_aux['area empresarial'].str.contains('Liverpool|Suburbia|CeDis')]
+
+    df_aux = df_aux[df_aux['Nivel de Riesgo'] == 'Riesgo Medio']
+
+    return f'{round(((len(df_aux) / len(df)) * 100), 2):,}%'
+   
+def percentageAtLowRisk(area = 'Todos', df = None):
+
+    if df is None:
+        df_aux = model_df.copy()
+    else:
+        df_aux = use_models(df)
+
+    if area == 'Todos':
+        pass
+    else:
+        if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+            df_aux = df_aux[df_aux['area empresarial'].str.contains(area)]
+        elif area == 'Otros':
+                df_aux = df_aux[~df_aux['area empresarial'].str.contains('Liverpool|Suburbia|CeDis')]
+
+    df_aux = df_aux[df_aux['Nivel de Riesgo'] == 'Riesgo Bajo']
+
+    return f'{round(((len(df_aux) / len(df)) * 100), 2):,}%'
+
+# Grafico de Barras
+def plotBars(df, 
+             column, 
+             data, 
+             name = '', 
+             title = 'Titulo', 
+             subtitle = '',
+             x_label = '', 
+             y_label = '',
+             orientation = 'v'):
+    
+    fig = go.Figure()
+
+    bars = []
+
+    color_key = 2
+
+    patterns = [ '', '/', '\\', 'x', '-', '|', '+', '.']
+
+    for key in range(0, len(data)):
+         fig.add_trace(go.Bar(x = df[data[key]] if orientation == 'horizontal' else df[column],
+                     y = df[column] if orientation == 'horizontal' else df[data[key]],
+                     marker = dict(color = colors[key + color_key]),
+                     name = data[key],
+                     marker_pattern_shape = patterns[key],
+                     orientation = 'h' if orientation == 'horizontal' else 'v'))
+         
+         color_key += 1
+
+    fig.update_xaxes(showline=True, 
+                     linewidth=2, 
+                     linecolor='black', 
+                     showgrid=False,
+                     tickangle=45,
+                     title_text = y_label if orientation == 'horizontal' else x_label)
+    
+    fig.update_yaxes(showline=True, 
+                     linewidth=2, 
+                     linecolor='black', 
+                     showgrid=False,
+                     title_text = x_label if orientation == 'horizontal' else y_label)
+
+    fig.update_layout(height = 260,
+                      width = 420,
+                      #title_text= setTitle(title, subtitle + f'- Dataset: {name}'),
+                      showlegend = False,
+                      plot_bgcolor='white',
+                      )
+    
+    return fig
+
+def plotServiceBars(area = 'Todos', df = None):
+
+    if df is None:
+        df_aux = model_df.copy()
+    else:
+        df_aux = use_models(df)
+
+    if area == 'Todos':
+        pass
+    else:
+        if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+            df_aux = df_aux[df_aux['area empresarial'].str.contains(area)]
+        elif area == 'Otros':
+                df_aux = df_aux[~df_aux['area empresarial'].str.contains('Liverpool|Suburbia|CeDis')]
+    
+    # Crear un diccionario para definir los patrones y sus rangos
+    patrones = {
+        '< 6 meses': (0, 6),
+        '6 -12 meses': (6, 12),
+        '12 - 24 meses': (12, 24),
+        '> 24 meses': (24, 60)
+    }
+
+    # Inicializar un diccionario para almacenar el conteo por grupo
+    conteo_por_grupo = {'Grupo': [], 'Conteo': []}
+
+    # Iterar sobre los patrones y contar las coincidencias en cada rango
+    for grupo, rango in patrones.items():
+        filtro = (df_aux['Antigüedad Pronosticada'] > rango[0]) & (df_aux['Antigüedad Pronosticada'] <= rango[1])
+        conteo = df_aux[filtro].shape[0]
+        conteo_por_grupo['Grupo'].append(grupo)
+        conteo_por_grupo['Conteo'].append(conteo)
+
+    # Crear el dataframe auxiliar
+    aux_df = pd.DataFrame(conteo_por_grupo)
+
+ 
+    values = aux_df['Conteo'].iloc[0:4].tolist()
+
+    fig = go.Figure(data=[go.Pie(labels=list(patrones.keys()),
+                             values=values,
+                             pull=[0, 0, 0, 0.2])])  # Ajusta el valor del cuarto elemento según sea necesario
+
+    fig.update_traces(hoverinfo='label+percent', textinfo='percent+label', textfont_size=12,
+                    marker=dict(colors=colors, line=dict(color='#000000', width=2)))
+
+    fig.update_layout(
+        showlegend=False,  # No mostrar leyendas
+        height=330,
+        width=440
+    )
+
+    return fig
+
+
+def getPredictionsTable(area = 'Todos', df = None):
+
+    if df is None:
+        df_aux = model_df.copy()
+    else:
+        df_aux = use_models(df)
+
+    if area == 'Todos':
+        pass
+    else:
+        if area == 'Liverpool' or area == 'Suburbia' or  area == 'CeDis':
+            df_aux = df_aux[df_aux['area empresarial'].str.contains(area)]
+        elif area == 'Otros':
+                df_aux = df_aux[~df_aux['area empresarial'].str.contains('Liverpool|Suburbia|CeDis')]
+
+    # Convierte 'antiguedad' en un formato de fecha
+    df_aux['Fecha Ingreso'] = datetime.now() - pd.to_timedelta(df_aux['antiguedad'], unit='D')
+
+    # Calcula la 'Fecha Salida' sumando 'Antigüedad Pronosticada' a 'Fecha Ingreso'
+    df_aux['Fecha Salida'] = df_aux.apply(lambda row: row['Fecha Ingreso'] + pd.DateOffset(months=row['Antigüedad Pronosticada']), axis=1)
+
+    # Aplica la lógica condicional para determinar el contenido de la columna 'Fecha Salida'
+    df_aux['Fecha Salida'] = df_aux.apply(lambda row: f"{row['Fecha Salida'].strftime('%m/%Y')}" if row['Fecha Salida'] > datetime.now() else 'Alcanzada', axis=1)
+
+    # Elimina la columna temporal 'Fecha Ingreso' si no la necesitas en el resultado final
+    df_aux = df_aux.drop(columns=['Fecha Ingreso'])
+    
+
+    fig = go.Figure(data=[go.Table(
+    header=dict(
+        values=['<b>ID</b>','<b>Área Empresarial</b>','<b>Nivel de Riesgo</b>','<b>Antigüedad Pronosticada (meses)</b>', '<b>Fecha estimada de Salida</b>'],
+        line_color='white',
+        fill_color=colors[2],
+        align=['left','center'],
+        font=dict(color='white', size=12)
+    ),
+    cells=dict(
+        values=[
+        df_aux['id'],
+        df_aux['area empresarial'],
+        df_aux['Nivel de Riesgo'],
+        df_aux['Antigüedad Pronosticada'],
+        df_aux['Fecha Salida']],
+        line_color='white',
+        # 2-D list of colors for alternating rows
+        fill_color = [['white',colors[5],'white', colors[5],'white', colors[5]]*1000],
+        align = ['left', 'center'],
+        font = dict(color = 'darkslategray', size = 11)
+        ))
+    ])
+
+    return fig
+
