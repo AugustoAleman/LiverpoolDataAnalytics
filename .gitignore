@@ -13,6 +13,9 @@ __pycache__/
 *.xlsx
 *.xls
 
+# Ignore ML Trained models
+*.joblib
+
 # Distribution / packaging
 .Python
 build/
